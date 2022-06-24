@@ -1,5 +1,6 @@
 package com.example.Student;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.h2.tools.Server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -18,9 +19,13 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ClientCodecConfigurer;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import java.sql.SQLException;
 import java.time.ZonedDateTime;
@@ -50,10 +55,16 @@ public class StudentApplication {
 
 	//WebClient Bean
 	@Bean
-	public WebClient.Builder getWebClientBuilder(){
-		return WebClient.builder();
+	public WebClient getWebClientBuilder(){
+		return WebClient.builder().exchangeStrategies(ExchangeStrategies.builder().codecs(this::acceptedCodecs).build())
+				.build();
 	}
 
+	private void acceptedCodecs(ClientCodecConfigurer clientCodecConfigurer) {
+		clientCodecConfigurer.defaultCodecs().maxInMemorySize(16*1024*1024);
+		clientCodecConfigurer.customCodecs().registerWithDefaultConfig(new Jackson2JsonDecoder(new ObjectMapper(), MediaType.TEXT_HTML));
+		clientCodecConfigurer.customCodecs().registerWithDefaultConfig(new Jackson2JsonEncoder(new ObjectMapper(), MediaType.TEXT_HTML));
+	}
 
 	//Cache Manager
 	@Bean

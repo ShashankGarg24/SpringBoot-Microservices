@@ -1,10 +1,13 @@
 package com.example.Student.Controllers;
 
+import com.example.Student.DTOs.ResponseDTO;
+import com.example.Student.Entities.Response;
 import com.example.Student.Entities.Student;
+import com.example.Student.Entities.TransactionDetails;
+import com.example.Student.Entities.TransactionStatus;
 import com.example.Student.Interfaces.StudentInfoInterface;
 import com.example.Student.Interfaces.StudentInterface;
 import com.example.Student.Repositories.StudentRepository;
-import com.example.Student.Services.StudentServices;
 import com.example.Student.DTOs.StudentDTO;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +34,7 @@ public class StudentController {
     private RestTemplate restTemplate;
 
     @Autowired
-    private WebClient.Builder webClientBuilder;
+    private WebClient webClientBuilder;
 
     @Autowired
     private StudentInfoInterface studentInfoInterface;
@@ -103,10 +106,10 @@ public class StudentController {
     //Getting response for the last task using WebClient
     @RequestMapping(value = "/response", method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            produces = {MediaType.APPLICATION_ATOM_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+            produces = { MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> getResponse(@RequestParam Map<String, String> request){
 
-        String response = webClientBuilder.build()
+        Response clientResponse = webClientBuilder
                 .post()
                 .uri("https://info.payu.in/merchant/postservice.php?form=2")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -116,7 +119,15 @@ public class StudentController {
                 .with("var1", request.get("var1"))
                 .with("hash", request.get("hash")))
                 .retrieve()
-                .bodyToMono(String.class).block();
+                .bodyToMono(Response.class).block();
+
+
+        TransactionDetails transactionDetails = clientResponse.getTransaction_details();
+        TransactionStatus transactionStatus = transactionDetails.getTransactionStatus();
+
+        ResponseDTO response = new ResponseDTO(transactionStatus.getMihpayid(), transactionStatus.getRequest_id(),
+                transactionStatus.getBank_ref_num(), transactionStatus.getAmt(), transactionStatus.getTransaction_amount(),
+                transactionStatus.getTxnid());
 
         return new ResponseEntity<>(response, HttpStatus.OK);
 
