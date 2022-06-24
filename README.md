@@ -11,6 +11,11 @@ OpenFeign
 Web
 
 
+Steps:
+1) Run all the 4 services.
+2) Then execute the following APIs.
+
+
 Available APIs
 
 To fetch all students(GET)
